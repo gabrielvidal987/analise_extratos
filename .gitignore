@@ -1,0 +1,39 @@
+# Ambiente local
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Segredos / credenciais
+apikey_gemini.txt
+*.pem
+*.key
+*.p12
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build/distribuicao
+build/
+dist/
+*.egg-info/
+
+# Logs e temporarios
+*.log
+*.tmp
+*.temp
+json_saida_atual.txt
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

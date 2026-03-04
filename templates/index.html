@@ -1,0 +1,413 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAnalyze AI - Detalhado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .drag-active { border-color: #3b82f6; background-color: #eff6ff; }
+        .file-item { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* EstilizaÃ§Ã£o das tabelas */
+        .category-header { background-color: #f3f4f6; }
+        .table-row:hover { background-color: #f9fafb; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <span class="text-blue-600 font-bold text-2xl">FinAnalyze<span class="text-gray-900">AI</span></span>
+                </div>
+                <div><span class="text-xs md:text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">VersÃ£o Pro</span></div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-12">
+        
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">AnÃ¡lise Inteligente de Extratos</h1>
+            <p class="mt-4 text-lg text-gray-500">Envie seus PDFs e receba uma auditoria completa com categorizaÃ§Ã£o automÃ¡tica.</p>
+        </div>
+
+        <!-- CARD DE UPLOAD -->
+        <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden transition-all" id="upload-card">
+            <div class="p-8">
+                <div id="dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition ease-in-out duration-200 flex flex-col items-center justify-center group">
+                    <div class="bg-blue-50 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    </div>
+                    <p class="text-gray-700 font-medium text-lg">Clique ou arraste seus extratos (PDF e imagem) aqui</p>
+                    <p class="text-gray-400 text-sm mt-1">Suporta arquivos mistos e multiplos simultaneos</p>
+                    <input type="file" id="fileInput" accept=".pdf,image/*" multiple class="hidden">
+                </div>
+
+                <!-- Lista de Arquivos -->
+                <div id="fileListContainer" class="mt-6 space-y-2 hidden">
+                    <div class="flex justify-between items-end mb-2">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Arquivos (<span id="fileCount">0</span>)</h4>
+                        <button id="clearAll" class="text-xs text-red-500 hover:underline">Limpar tudo</button>
+                    </div>
+                    <div id="fileList" class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar"></div>
+                </div>
+
+                <button id="analyzeBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-lg shadow-lg hover:shadow-xl transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
+                    <span id="btnText">Iniciar AnÃ¡lise IA</span>
+                    <svg id="loadingSpinner" class="animate-spin ml-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- RESULTADOS -->
+        <div id="resultsSection" class="hidden mt-16 space-y-12">
+
+            <!-- 1. Conselho IA -->
+            <div class="bg-gradient-to-r from-indigo-900 to-blue-900 rounded-xl shadow-xl p-8 text-white relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-yellow-500 p-2 rounded-lg mr-3 shadow-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-yellow-400">Consultoria IA</h3>
+                    </div>
+                    <p id="conselhoText" class="text-indigo-100 text-lg leading-relaxed font-light">...</p>
+                </div>
+            </div>
+            
+            <!-- 2. Resumo e Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-1 gap-8">
+
+                <!-- Coluna KPIs -->
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow border-l-4 border-green-500 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Entradas</p>
+                            <p id="entradasVal" class="text-2xl font-bold text-green-600">R$ 0,00</p>
+                        </div>
+                        <div class="bg-green-100 p-2 rounded-full"><svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow border-l-4 border-red-500 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-semibold">SaÃ­das</p>
+                            <p id="saidasVal" class="text-2xl font-bold text-red-600">R$ 0,00</p>
+                        </div>
+                        <div class="bg-red-100 p-2 rounded-full"><svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path></svg></div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-xl shadow flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase font-semibold">Resultado</p>
+                            <p id="saldoVal" class="text-2xl font-bold text-white">R$ 0,00</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. GrÃ¡fico -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-lg font-bold text-gray-700 mb-4 text-center">ProporÃ§Ã£o Financeira</h3>
+                <div class="h-64 w-full flex justify-center">
+                    <canvas id="financeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 4. Tabelas Detalhadas (NOVO) -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                
+                <!-- Tabela de Entradas -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div class="bg-green-50 px-6 py-4 border-b border-green-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-green-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Detalhamento de Entradas
+                        </h3>
+                    </div>
+                    <div id="entradasContainer" class="p-0">
+                        <!-- Tabela renderizada via JS -->
+                    </div>
+                </div>
+
+                <!-- Tabela de SaÃ­das -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div class="bg-red-50 px-6 py-4 border-b border-red-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-red-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                            Detalhamento de SaÃ­das
+                        </h3>
+                    </div>
+                    <div id="saidasContainer" class="p-0">
+                        <!-- Tabela renderizada via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reset -->
+            <div class="mt-12 text-center pb-12">
+                <button onclick="location.reload()" class="bg-white border border-gray-300 text-gray-600 hover:text-blue-600 hover:border-blue-500 font-semibold py-2 px-6 rounded-full transition-all">
+                    Fazer Nova AnÃ¡lise
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ELEMENTOS
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const fileCountSpan = document.getElementById('fileCount');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const btnText = document.getElementById('btnText');
+        const resultsSection = document.getElementById('resultsSection');
+        const clearAllBtn = document.getElementById('clearAll');
+
+        let filesArray = [];
+        let myChart = null;
+
+        function asNumber(value) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function normalizeCategories(data) {
+            if (Array.isArray(data)) return data;
+            if (data && Array.isArray(data.categorias)) return data.categorias;
+            return [];
+        }
+
+        // -- MANIPULAÃ‡ÃƒO DE ARQUIVOS --
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-active'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-active'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-active');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFiles(incomingFiles) {
+            const acceptedTypes = ['application/pdf'];
+            const acceptedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tif', '.tiff'];
+            const acceptedFiles = Array.from(incomingFiles).filter(file => {
+                const fileType = (file.type || '').toLowerCase();
+                const fileName = (file.name || '').toLowerCase();
+                return acceptedTypes.includes(fileType) || fileType.startsWith('image/') || acceptedExtensions.some(ext => fileName.endsWith(ext));
+            });
+            if (acceptedFiles.length === 0 && incomingFiles.length > 0) {
+                alert('Envie apenas PDF ou imagens (png, jpg, jpeg, webp, bmp, tif, tiff).');
+            }
+            
+            filesArray = [...filesArray, ...acceptedFiles];
+            updateFileList();
+        }
+
+        function removeFile(index) {
+            filesArray.splice(index, 1);
+            updateFileList();
+        }
+
+        clearAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filesArray = [];
+            updateFileList();
+            fileInput.value = '';
+        });
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            fileCountSpan.textContent = filesArray.length;
+            
+            if (filesArray.length > 0) {
+                fileListContainer.classList.remove('hidden');
+                filesArray.forEach((file, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'file-item bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-center';
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div class="bg-red-100 p-1 rounded"><svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" /></svg></div>
+                            <span class="text-sm text-gray-600 truncate">${file.name}</span>
+                        </div>
+                        <button onclick="removeFile(${index})" class="text-gray-400 hover:text-red-500">âœ•</button>
+                    `;
+                    fileList.appendChild(div);
+                });
+            } else {
+                fileListContainer.classList.add('hidden');
+            }
+        }
+
+        // -- ENVIO E ANÃLISE --
+
+        analyzeBtn.addEventListener('click', async () => {
+            if (filesArray.length === 0) return alert("Selecione pelo menos um arquivo.");
+            
+            setLoading(true);
+
+            try {
+                // Aqui entraria o fetch real para sua API
+                const formData = new FormData();
+
+                // IMPORTANTE: o nome "files" deve bater com o backend
+                for (const file of filesArray) {
+                    formData.append("files", file);
+                }
+
+                const response = await fetch("/upload-extratos", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) { throw new Error("Erro na requisiÃ§Ã£o"); }
+
+                const received = await response.json();
+
+                if (received.sucess !== true) { throw (received.message || "Erro no processamento") }
+
+                renderResults(received.data);
+
+            } catch (error) {
+                console.log(error);
+                alert("Erro ao processar.");
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function setLoading(state) {
+            if(state) {
+                analyzeBtn.disabled = true;
+                btnText.textContent = "Processando Dados...";
+                loadingSpinner.classList.remove('hidden');
+                resultsSection.classList.add('hidden');
+            } else {
+                analyzeBtn.disabled = false;
+                btnText.textContent = "Iniciar AnÃ¡lise IA";
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // -- RENDERIZAÃ‡ÃƒO --
+
+        function renderResults(data) {
+            const formatMoney = (val) => asNumber(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const totalEntradas = asNumber(data?.resumo?.["total_entradas"]);
+            const totalSaidas = asNumber(data?.resumo?.["total_saidas"]);
+            const saldoCalculado = totalEntradas - totalSaidas;
+            const conselho = data?.resumo?.["recomendacao financeira"] || data?.resumo?.["recomendaÃ§Ã£o financeira"] || "";
+            const entradas = normalizeCategories(data?.entradas);
+            const saidas = normalizeCategories(data?.saidas);
+
+            // 1. Textos e KPIs
+            document.getElementById('conselhoText').textContent = conselho;
+            document.getElementById('entradasVal').textContent = formatMoney(totalEntradas);
+            document.getElementById('saidasVal').textContent = formatMoney(totalSaidas);
+            
+            document.getElementById('saldoVal').textContent = formatMoney(saldoCalculado);
+            document.getElementById('saldoVal').className = `text-2xl font-bold ${saldoCalculado >= 0 ? 'text-green-400' : 'text-red-400'}`;
+
+            // 2. GrÃ¡fico
+            renderChart(totalEntradas, totalSaidas);
+
+            // 3. Tabelas Detalhadas (A mÃ¡gica acontece aqui)
+            renderDetailedTable('entradasContainer', entradas, 'text-green-600');
+            renderDetailedTable('saidasContainer', saidas, 'text-red-600');
+
+            resultsSection.classList.remove('hidden');
+            setTimeout(() => resultsSection.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+
+        function renderDetailedTable(containerId, categoriasData, moneyColorClass) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Limpa anterior
+
+            // Se nÃ£o houver dados
+            if (!categoriasData || categoriasData.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-400 italic">Nenhum dado encontrado.</div>';
+                return;
+            }
+
+            // Para cada Categoria
+            for (const dict_categorie of categoriasData) {
+                
+                // Calcula total da categoria
+                const totalCategoria = asNumber(dict_categorie["valor_categoria"] ?? dict_categorie["total_categoria"]);
+
+                // HTML do CabeÃ§alho da Categoria
+                const section = document.createElement('div');
+                section.className = 'border-b border-gray-100 last:border-0';
+                
+                let itemsHtml = '';
+                (dict_categorie["itens"] || []).forEach(item => {
+                    itemsHtml += `
+                        <tr class="table-row border-b border-gray-50 last:border-0 text-sm">
+                            <td class="px-6 py-3 text-gray-500 w-24">${item.nome}</td>
+                            <td class="px-6 py-3 text-right font-semibold text-gray-600">
+                                ${asNumber(item.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                section.innerHTML = `
+                    <div class="category-header px-6 py-3 flex justify-between items-center cursor-default">
+                        <span class="font-bold text-gray-700 uppercase text-xs tracking-wider">${dict_categorie["nome_categoria"]}</span>
+                        <span class="font-bold text-sm ${moneyColorClass}">
+                            ${totalCategoria.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </span>
+                    </div>
+                    <table class="min-w-full w-full">
+                        <tbody class="bg-white">
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                `;
+                
+                container.appendChild(section);
+            }
+        }
+
+        function renderChart(entradas, saidas) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Entradas', 'SaÃ­das'],
+                    datasets: [{
+                        data: [entradas, saidas],
+                        backgroundColor: ['#22c55e', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
+
